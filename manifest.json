@@ -1,0 +1,22 @@
+{
+  "name": "bookmark-toc",
+  "description": "easy bookmark-toc",
+  "version": "1.0",
+  "manifest_version": 3,
+  "permissions": ["storage", "scripting",  "tabs", "activeTab"],
+  "action": {
+    "default_popup": "toc.html",
+    "default_icon": {
+      "16": "toc.png",
+      "32": "toc.png",
+      "48": "toc.png",
+      "128": "toc.png"
+    }
+  },
+  "icons": {
+    "16": "toc.png",
+    "32": "toc.png",
+    "48": "toc.png",
+    "128": "toc.png"
+  }
+}
