@@ -1,9 +1,32 @@
 {
-  "name": "bookmark-toc",
-  "description": "easy bookmark-toc",
-  "version": "1.0",
   "manifest_version": 3,
-  "permissions": ["storage", "scripting",  "tabs", "activeTab"],
+  "name": "bookmark-toc",
+  "version": "1.0",
+  "description": "easy bookmark-toc",
+  "permissions": ["storage", "activeTab"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "commands": {
+    "saveDomPosition": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+1"
+      },
+      "description": "Save DOM position"
+    },
+    "scrollToDomPosition": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+2"
+      },
+      "description": "Scroll to saved DOM position"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"]
+    }
+  ],
   "action": {
     "default_popup": "toc.html",
     "default_icon": {
