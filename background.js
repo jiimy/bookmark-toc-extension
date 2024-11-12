@@ -3,6 +3,8 @@
 chrome.commands.onCommand.addListener((command) => {
   console.log("Command received: ", command);
 
+  alert('bg');
+
   if (command === "saveDomPosition") {
     // F2 키로 DOM 위치 저장
     console.log("Saving DOM position...");

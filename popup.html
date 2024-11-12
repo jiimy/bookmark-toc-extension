@@ -4,13 +4,23 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="./bookmark-ui.css" />
-
     <title>Document</title>
+    <style>
+      button {
+        display: inline-block;
+        color: red;
+        padding: 10px;
+        outline: none;
+        border: none;
+        border-radius: 2px;
+        cursor: pointer;
+      }
+    </style>
   </head>
   <body>
     <h1>Saved DOM Positions</h1>
     <ul id="domList"></ul>
-    <script src="popup.js"></script>
+    <button id="save">추가</button>
+    <script src="/popup.js"></script>
   </body>
 </html>
