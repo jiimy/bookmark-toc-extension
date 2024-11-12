@@ -5,12 +5,11 @@
   "description": "easy bookmark-toc",
   "permissions": ["storage", "activeTab", "tabs", "background"],
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background.js",
+    "scripts": ["background.js"],
+    "persistent": true
   },
-  "host_permissions": [
-    "http://*/*",
-    "https://*/*"
-  ],
+  "host_permissions": ["http://*/*", "https://*/*"],
   "commands": {
     "saveDomPosition": {
       "suggested_key": {
@@ -24,6 +23,10 @@
       },
       "description": "Scroll to saved DOM position"
     }
+  },
+  "browser_action": {
+    "default_title": "toc",
+    "default_popup": "popup.html"
   },
   "content_scripts": [
     {
