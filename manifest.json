@@ -1,13 +1,11 @@
 {
   "manifest_version": 3,
   "name": "bookmark-toc",
-  "version": "1.0",
+  "version": "1.0.1",
   "description": "easy bookmark-toc",
-  "permissions": ["storage", "activeTab", "tabs", "background"],
+  "permissions": ["storage", "activeTab", "tabs", "scripting"],
   "background": {
-    "service_worker": "background.js",
-    "scripts": ["background.js"],
-    "persistent": true
+    "service_worker": "background.js"
   },
   "host_permissions": ["http://*/*", "https://*/*"],
   "commands": {
@@ -24,17 +22,8 @@
       "description": "Scroll to saved DOM position"
     }
   },
-  "browser_action": {
-    "default_title": "toc",
-    "default_popup": "popup.html"
-  },
-  "content_scripts": [
-    {
-      "matches": ["<all_urls>"],
-      "js": ["content.js"]
-    }
-  ],
   "action": {
+    "default_title": "bookmark-toc",
     "default_popup": "popup.html",
     "default_icon": {
       "16": "toc.png",
@@ -43,6 +32,12 @@
       "128": "toc.png"
     }
   },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"]
+    }
+  ],
   "icons": {
     "16": "toc.png",
     "32": "toc.png",

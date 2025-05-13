@@ -1,26 +1,26 @@
 // content.js
 
 document.getElementById("save").addEventListener("click", () => {
-  alert('12');
-  // let selectedElement = null;
+  // alert('12');
+  let selectedElement = null;
 
-  // // 클릭한 DOM을 저장
-  // document.body.style.pointerEvents = "none";
-  // document.body.addEventListener("click", (event) => {
-  //   selectedElement = event.target;
-  //   const selector = getElementSelector(selectedElement);
-  //   const scrollTop = window.scrollY;
+  // 클릭한 DOM을 저장
+  document.body.style.pointerEvents = "none";
+  document.body.addEventListener("click", (event) => {
+    selectedElement = event.target;
+    const selector = getElementSelector(selectedElement);
+    const scrollTop = window.scrollY;
 
-  //   // Background에 저장 요청
-  //   chrome.runtime.sendMessage({
-  //     action: "saveDomPosition",
-  //     url: window.location.href,
-  //     selector,
-  //     scrollTop,
-  //   });
+    // Background에 저장 요청
+    chrome.runtime.sendMessage({
+      action: "saveDomPosition",
+      url: window.location.href,
+      selector,
+      scrollTop,
+    });
 
-  //   document.body.style.pointerEvents = ""; // 클릭 가능 상태 복구
-  // });
+    document.body.style.pointerEvents = ""; // 클릭 가능 상태 복구
+  });
 });
 
 // 유니크한 선택자 가져오는 함수
