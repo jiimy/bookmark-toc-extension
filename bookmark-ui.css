@@ -47,6 +47,43 @@ body {
   line-height: 1.5;
 }
 
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.search {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.search:focus {
+  outline: none;
+  border-color: #4f8cff;
+}
+
+.clear-btn {
+  flex-shrink: 0;
+  border: 1px solid #fecaca;
+  background: #fff;
+  color: #dc2626;
+  padding: 7px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.clear-btn:hover {
+  background: #fee2e2;
+}
+
 .list {
   list-style: none;
   margin: 0;
@@ -54,6 +91,8 @@ body {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  max-height: 380px;
+  overflow-y: auto;
 }
 
 .card {

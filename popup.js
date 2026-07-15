@@ -1,30 +1,51 @@
 // popup.js
-// 저장된 DOM 북마크 목록을 렌더링하고, 이동/설명편집/삭제를 처리합니다.
-
 const listEl = document.getElementById("domList");
 const emptyEl = document.getElementById("empty");
 const pickBtn = document.getElementById("pick");
+const searchEl = document.getElementById("search");
+const clearBtn = document.getElementById("clear");
+
+let allItems = [];
 
 function loadList() {
   chrome.storage.local.get({ domList: [] }, (result) => {
-    render(result.domList || []);
+    allItems = result.domList || [];
+    renderFiltered();
   });
 }
 
 function saveList(domList) {
+  allItems = domList;
   chrome.storage.local.set({ domList });
 }
 
-function render(domList) {
-  listEl.innerHTML = "";
-  emptyEl.hidden = domList.length > 0;
+function renderFiltered() {
+  const q = searchEl.value.trim().toLowerCase();
+  const items = q ? allItems.filter((item) => matches(item, q)) : allItems;
+  render(items);
+}
 
-  domList.forEach((item) => {
-    listEl.appendChild(createCard(item, domList));
+function matches(item, q) {
+  return [item.label, item.title, item.url, item.description]
+    .filter(Boolean)
+    .some((field) => field.toLowerCase().includes(q));
+}
+
+function render(items) {
+  listEl.innerHTML = "";
+  emptyEl.hidden = items.length > 0;
+  if (items.length === 0) {
+    emptyEl.textContent = allItems.length
+      ? "검색 결과가 없습니다."
+      : "저장된 북마크가 없습니다.";
+  }
+
+  items.forEach((item) => {
+    listEl.appendChild(createCard(item));
   });
 }
 
-function createCard(item, domList) {
+function createCard(item) {
   const li = document.createElement("li");
   li.className = "card";
 
@@ -45,7 +66,7 @@ function createCard(item, domList) {
   desc.value = item.description || "";
   desc.addEventListener("change", () => {
     item.description = desc.value;
-    saveList(domList);
+    saveList(allItems);
   });
 
   const actions = document.createElement("div");
@@ -60,9 +81,9 @@ function createCard(item, domList) {
   deleteBtn.className = "action-btn delete-btn";
   deleteBtn.textContent = "삭제";
   deleteBtn.addEventListener("click", () => {
-    const next = domList.filter((it) => it.id !== item.id);
+    const next = allItems.filter((it) => it.id !== item.id);
     saveList(next);
-    render(next);
+    renderFiltered();
   });
 
   actions.appendChild(goBtn);
@@ -80,7 +101,6 @@ function openBookmark(item) {
   window.close();
 }
 
-// "요소 선택" 버튼: 활성 탭의 콘텐츠 스크립트에 선택 모드를 요청합니다.
 function activatePicker() {
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     const tab = tabs[0];
@@ -88,7 +108,6 @@ function activatePicker() {
 
     chrome.tabs.sendMessage(tab.id, { action: "startPicking" }, () => {
       if (chrome.runtime.lastError) {
-        // 콘텐츠 스크립트가 아직 주입되지 않은 탭이면 주입 후 재시도
         chrome.scripting.executeScript(
           { target: { tabId: tab.id }, files: ["content.js"] },
           () => {
@@ -105,12 +124,21 @@ function activatePicker() {
   });
 }
 
-pickBtn.addEventListener("click", activatePicker);
+function clearAll() {
+  if (allItems.length === 0) return;
+  if (!confirm("저장된 북마크를 모두 삭제할까요?")) return;
+  saveList([]);
+  renderFiltered();
+}
 
-// 팝업이 열려 있는 동안 저장 내용이 바뀌면 목록 갱신
+pickBtn.addEventListener("click", activatePicker);
+clearBtn.addEventListener("click", clearAll);
+searchEl.addEventListener("input", renderFiltered);
+
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area === "local" && changes.domList) {
-    render(changes.domList.newValue || []);
+    allItems = changes.domList.newValue || [];
+    renderFiltered();
   }
 });
 
