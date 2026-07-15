@@ -4,8 +4,22 @@ const emptyEl = document.getElementById("empty");
 const pickBtn = document.getElementById("pick");
 const searchEl = document.getElementById("search");
 const clearBtn = document.getElementById("clear");
+const shortcutDisplay = document.getElementById("shortcutDisplay");
+const changeShortcutBtn = document.getElementById("changeShortcut");
+const pickKeyLabel = document.getElementById("pickKeyLabel");
+const hintKey = document.getElementById("hintKey");
+
+const DEFAULT_SHORTCUT = {
+  key: "F2",
+  code: "F2",
+  ctrl: false,
+  alt: false,
+  shift: false,
+  meta: false,
+};
 
 let allItems = [];
+let capturing = false;
 
 function loadList() {
   chrome.storage.local.get({ domList: [] }, (result) => {
@@ -131,9 +145,115 @@ function clearAll() {
   renderFiltered();
 }
 
+// ---- 단축키 설정 ----
+function codeLabel(code) {
+  if (!code) return "";
+  if (code.startsWith("Key")) return code.slice(3); // KeyF -> F
+  if (code.startsWith("Digit")) return code.slice(5); // Digit1 -> 1
+  if (code.startsWith("Numpad")) return "Num " + code.slice(6);
+  const map = {
+    Space: "Space",
+    Escape: "Esc",
+    ArrowUp: "↑",
+    ArrowDown: "↓",
+    ArrowLeft: "←",
+    ArrowRight: "→",
+    Comma: ",",
+    Period: ".",
+    Slash: "/",
+    Backquote: "`",
+    Minus: "-",
+    Equal: "=",
+    Semicolon: ";",
+    Quote: "'",
+    BracketLeft: "[",
+    BracketRight: "]",
+    Backslash: "\\",
+  };
+  return map[code] || code;
+}
+
+function formatShortcut(sc) {
+  const parts = [];
+  if (sc.ctrl) parts.push("Ctrl");
+  if (sc.alt) parts.push("Alt");
+  if (sc.shift) parts.push("Shift");
+  if (sc.meta) parts.push("Meta");
+  const main = sc.code
+    ? codeLabel(sc.code)
+    : sc.key.length === 1
+      ? sc.key.toUpperCase()
+      : sc.key;
+  parts.push(main);
+  return parts.join(" + ");
+}
+
+function applyShortcutLabel(sc) {
+  const text = formatShortcut(sc);
+  shortcutDisplay.textContent = text;
+  pickKeyLabel.textContent = text;
+  hintKey.textContent = text;
+}
+
+function loadShortcut() {
+  chrome.storage.local.get({ pickShortcut: DEFAULT_SHORTCUT }, (result) => {
+    applyShortcutLabel(result.pickShortcut || DEFAULT_SHORTCUT);
+  });
+}
+
+function startCapture() {
+  if (capturing) return;
+  capturing = true;
+  shortcutDisplay.textContent = "키 입력...";
+  shortcutDisplay.classList.add("capturing");
+  changeShortcutBtn.textContent = "취소";
+  document.addEventListener("keydown", onCaptureKey, true);
+}
+
+function stopCapture() {
+  capturing = false;
+  shortcutDisplay.classList.remove("capturing");
+  changeShortcutBtn.textContent = "변경";
+  document.removeEventListener("keydown", onCaptureKey, true);
+}
+
+function onCaptureKey(event) {
+  event.preventDefault();
+  event.stopPropagation();
+
+  // 수식 키(Ctrl/Alt/Shift/Meta)만 누른 경우는 조합 대기
+  if (["Control", "Alt", "Shift", "Meta"].includes(event.key)) return;
+
+  if (event.key === "Escape") {
+    stopCapture();
+    loadShortcut();
+    return;
+  }
+
+  const sc = {
+    key: event.key,
+    code: event.code,
+    ctrl: event.ctrlKey,
+    alt: event.altKey,
+    shift: event.shiftKey,
+    meta: event.metaKey,
+  };
+  chrome.storage.local.set({ pickShortcut: sc });
+  applyShortcutLabel(sc);
+  stopCapture();
+}
+
 pickBtn.addEventListener("click", activatePicker);
 clearBtn.addEventListener("click", clearAll);
 searchEl.addEventListener("input", renderFiltered);
+changeShortcutBtn.addEventListener("click", () => {
+  if (capturing) {
+    stopCapture();
+    loadShortcut();
+  } else {
+    startCapture();
+  }
+});
 
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area === "local" && changes.domList) {
@@ -142,4 +262,5 @@ chrome.storage.onChanged.addListener((changes, area) => {
   }
 });
 
+loadShortcut();
 loadList();

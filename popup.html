@@ -9,12 +9,21 @@
   <body>
     <header class="header">
       <h1 class="title">DOM 북마크</h1>
-      <button id="pick" class="pick-btn" type="button">요소 선택 (F2)</button>
+      <button id="pick" class="pick-btn" type="button">
+        요소 선택 (<span id="pickKeyLabel">F2</span>)
+      </button>
     </header>
 
     <p class="hint">
-      페이지에서 <b>F2</b>를 누른 뒤 원하는 요소를 클릭하면 위치가 저장됩니다.
+      페이지에서 <b id="hintKey">F2</b>를 누른 뒤 원하는 요소를 클릭하면 위치가
+      저장됩니다.
     </p>
+
+    <div class="shortcut-row">
+      <span class="shortcut-label">단축키</span>
+      <kbd id="shortcutDisplay" class="kbd">F2</kbd>
+      <button id="changeShortcut" class="mini-btn" type="button">변경</button>
+    </div>
 
     <div class="toolbar">
       <input

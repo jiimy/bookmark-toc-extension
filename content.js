@@ -4,10 +4,60 @@
 
 const HIGHLIGHT_STYLE = "2px solid #4f8cff";
 const OVERLAY_ID = "__bookmark_toc_banner__";
+const DEFAULT_SHORTCUT = {
+  key: "F2",
+  code: "F2",
+  ctrl: false,
+  alt: false,
+  shift: false,
+  meta: false,
+};
 
 let picking = false;
 let hovered = null;
 let hoveredPrevOutline = "";
+let pickShortcut = DEFAULT_SHORTCUT;
+
+// 확장 컨텍스트가 살아있는지 확인 (재로드 후 남은 orphan 스크립트 대비)
+function extensionValid() {
+  try {
+    return Boolean(chrome.runtime && chrome.runtime.id && chrome.storage);
+  } catch (e) {
+    return false;
+  }
+}
+
+function safeStorage() {
+  return extensionValid() ? chrome.storage.local : null;
+}
+
+if (safeStorage()) {
+  chrome.storage.local.get({ pickShortcut: DEFAULT_SHORTCUT }, (result) => {
+    if (chrome.runtime.lastError) return;
+    if (result.pickShortcut) pickShortcut = result.pickShortcut;
+  });
+
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === "local" && changes.pickShortcut) {
+      pickShortcut = changes.pickShortcut.newValue || DEFAULT_SHORTCUT;
+    }
+  });
+}
+
+function matchesShortcut(event, sc) {
+  if (!sc) return false;
+  // code(물리 키) 우선 매칭, 없으면 legacy key 매칭
+  const keyMatch = sc.code
+    ? event.code === sc.code
+    : sc.key && event.key.toLowerCase() === sc.key.toLowerCase();
+  if (!keyMatch) return false;
+  return (
+    !!sc.ctrl === event.ctrlKey &&
+    !!sc.alt === event.altKey &&
+    !!sc.shift === event.shiftKey &&
+    !!sc.meta === event.metaKey
+  );
+}
 
 function startPicking() {
   if (picking) return;
@@ -34,9 +84,14 @@ function isOwnUi(el) {
   return el && el.id === OVERLAY_ID;
 }
 
+// style 속성을 가진 실제 요소인지 확인 (텍스트/특수 노드 방어)
+function isStyleable(el) {
+  return Boolean(el && el.nodeType === Node.ELEMENT_NODE && el.style);
+}
+
 function onMouseOver(event) {
   const el = event.target;
-  if (isOwnUi(el)) return;
+  if (isOwnUi(el) || !isStyleable(el)) return;
   clearHover();
   hovered = el;
   hoveredPrevOutline = el.style.outline;
@@ -49,12 +104,12 @@ function onMouseOut() {
 }
 
 function clearHover() {
-  if (hovered) {
+  if (hovered && isStyleable(hovered)) {
     hovered.style.outline = hoveredPrevOutline;
     hovered.style.outlineOffset = "";
-    hovered = null;
-    hoveredPrevOutline = "";
   }
+  hovered = null;
+  hoveredPrevOutline = "";
 }
 
 function onClick(event) {
@@ -64,7 +119,6 @@ function onClick(event) {
   event.stopPropagation();
   saveTarget(el);
   stopPicking();
-  showToast("북마크에 저장되었습니다");
 }
 
 function onKeyDownWhilePicking(event) {
@@ -77,6 +131,12 @@ function onKeyDownWhilePicking(event) {
 }
 
 function saveTarget(el) {
+  const storage = safeStorage();
+  if (!storage) {
+    showToast("확장 재로드됨 · 페이지를 새로고침하세요");
+    return;
+  }
+
   const item = {
     id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
     url: location.href,
@@ -88,10 +148,20 @@ function saveTarget(el) {
     createdAt: Date.now(),
   };
 
-  chrome.storage.local.get({ domList: [] }, (result) => {
+  storage.get({ domList: [] }, (result) => {
+    if (chrome.runtime.lastError) {
+      showToast("저장 실패 · 페이지를 새로고침하세요");
+      return;
+    }
     const domList = result.domList || [];
     domList.push(item);
-    chrome.storage.local.set({ domList });
+    storage.set({ domList }, () => {
+      if (chrome.runtime.lastError) {
+        showToast("저장 실패 · 페이지를 새로고침하세요");
+        return;
+      }
+      showToast("북마크에 저장되었습니다");
+    });
   });
 }
 
@@ -185,7 +255,7 @@ function showToast(text) {
 document.addEventListener(
   "keydown",
   (event) => {
-    if (event.key === "F2") {
+    if (matchesShortcut(event, pickShortcut)) {
       event.preventDefault();
       if (picking) stopPicking();
       else startPicking();
