@@ -1,47 +1,22 @@
 {
   "manifest_version": 3,
   "name": "bookmark-toc",
-  "version": "1.0.1",
-  "description": "easy bookmark-toc",
+  "version": "1.1.0",
+  "description": "특정 DOM 위치를 북마크로 저장하고, 나중에 그 위치로 바로 이동합니다.",
   "permissions": ["storage", "activeTab", "tabs", "scripting"],
+  "host_permissions": ["http://*/*", "https://*/*"],
   "background": {
     "service_worker": "background.js"
   },
-  "host_permissions": ["http://*/*", "https://*/*"],
-  "commands": {
-    "saveDomPosition": {
-      "suggested_key": {
-        "default": "Ctrl+Shift+1"
-      },
-      "description": "Save DOM position"
-    },
-    "scrollToDomPosition": {
-      "suggested_key": {
-        "default": "Ctrl+Shift+2"
-      },
-      "description": "Scroll to saved DOM position"
-    }
-  },
   "action": {
     "default_title": "bookmark-toc",
-    "default_popup": "popup.html",
-    "default_icon": {
-      "16": "toc.png",
-      "32": "toc.png",
-      "48": "toc.png",
-      "128": "toc.png"
-    }
+    "default_popup": "popup.html"
   },
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["content.js"]
+      "js": ["content.js"],
+      "run_at": "document_idle"
     }
-  ],
-  "icons": {
-    "16": "toc.png",
-    "32": "toc.png",
-    "48": "toc.png",
-    "128": "toc.png"
-  }
+  ]
 }

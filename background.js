@@ -1,71 +1,82 @@
 // background.js
+// 팝업에서 북마크 항목을 클릭하면, 해당 URL로 이동한 뒤 저장된 위치로 스크롤합니다.
 
-chrome.commands.onCommand.addListener((command) => {
-  console.log("Command received: ", command);
-
-  alert('bg');
-
-  if (command === "saveDomPosition") {
-    // F2 키로 DOM 위치 저장
-    console.log("Saving DOM position...");
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      const tab = tabs[0];
-      chrome.scripting.executeScript(
-        {
-          target: { tabId: tab.id },
-          func: saveDomPosition, // DOM 위치를 저장하는 함수 호출
-        },
-        () => console.log("DOM position saved!")
-      );
-    });
-  }
-
-  if (command === "scrollToDomPosition") {
-    // F3 키로 저장된 DOM 위치로 스크롤 이동
-    console.log("Scrolling to saved DOM position...");
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      const tab = tabs[0];
-      chrome.scripting.executeScript(
-        {
-          target: { tabId: tab.id },
-          func: scrollToSavedDomPosition, // DOM 위치로 스크롤 이동하는 함수 호출
-        },
-        () => console.log("Scrolled to DOM position!")
-      );
-    });
+chrome.runtime.onMessage.addListener((message) => {
+  if (message && message.action === "openBookmark" && message.item) {
+    openBookmark(message.item);
   }
 });
 
-// DOM 위치 저장 함수
-function saveDomPosition() {
-  const url = window.location.href;
-  const scrollTop = window.scrollY;
-  const selector = document.querySelector(":hover"); // 현재 마우스가 올려진 요소를 선택
+function stripHash(url) {
+  return (url || "").split("#")[0];
+}
 
-  chrome.storage.local.get(["domList"], function (result) {
-    let domList = result.domList || [];
-    domList.push({
-      url,
-      scrollTop,
-      selector: selector ? selector.tagName : "",
+function openBookmark(item) {
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    const tab = tabs[0];
+    if (!tab) return;
+
+    const sameUrl = tab.url && stripHash(tab.url) === stripHash(item.url);
+
+    if (sameUrl) {
+      runScroll(tab.id, item);
+      return;
+    }
+
+    chrome.tabs.update(tab.id, { url: item.url }, () => {
+      const listener = (updatedTabId, info) => {
+        if (updatedTabId === tab.id && info.status === "complete") {
+          chrome.tabs.onUpdated.removeListener(listener);
+          runScroll(tab.id, item);
+        }
+      };
+      chrome.tabs.onUpdated.addListener(listener);
     });
-    chrome.storage.local.set({ domList });
   });
 }
 
-// DOM 위치로 스크롤 이동 함수
-function scrollToSavedDomPosition() {
-  chrome.storage.local.get(["domList"], function (result) {
-    const domList = result.domList || [];
-    const currentUrl = window.location.href;
-    const dom = domList.find((item) => item.url === currentUrl);
+function runScroll(tabId, item) {
+  chrome.scripting.executeScript({
+    target: { tabId },
+    func: scrollToTarget,
+    args: [item.selector, item.scrollTop],
+  });
+}
 
-    if (dom && dom.selector) {
-      const element = document.querySelector(dom.selector);
-      if (element) {
-        element.scrollIntoView({ behavior: "smooth" });
-        window.scrollTo(0, dom.scrollTop);
+// 대상 탭에서 실행되는 함수 (동적 로딩 대비 재시도)
+function scrollToTarget(selector, scrollTop) {
+  let attempts = 0;
+  const maxAttempts = 20;
+
+  const tryScroll = () => {
+    attempts += 1;
+    let el = null;
+    if (selector) {
+      try {
+        el = document.querySelector(selector);
+      } catch (e) {
+        el = null;
       }
     }
-  });
+
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      const prev = el.style.outline;
+      el.style.outline = "2px solid #ff5a5a";
+      el.style.outlineOffset = "-1px";
+      setTimeout(() => {
+        el.style.outline = prev;
+        el.style.outlineOffset = "";
+      }, 1500);
+      return;
+    }
+
+    if (attempts < maxAttempts) {
+      setTimeout(tryScroll, 150);
+    } else if (typeof scrollTop === "number") {
+      window.scrollTo({ top: scrollTop, behavior: "smooth" });
+    }
+  };
+
+  tryScroll();
 }
