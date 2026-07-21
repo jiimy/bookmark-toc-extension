@@ -154,7 +154,8 @@ function saveTarget(el) {
       return;
     }
     const domList = result.domList || [];
-    domList.unshift(item);
+    domList.push(item);
+    domList.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
     storage.set({ domList }, () => {
       if (chrome.runtime.lastError) {
         showToast("저장 실패 · 페이지를 새로고침하세요");

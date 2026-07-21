@@ -21,16 +21,20 @@ const DEFAULT_SHORTCUT = {
 let allItems = [];
 let capturing = false;
 
+function sortNewestFirst(list) {
+  return list.slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+}
+
 function loadList() {
   chrome.storage.local.get({ domList: [] }, (result) => {
-    allItems = result.domList || [];
+    allItems = sortNewestFirst(result.domList || []);
     renderFiltered();
   });
 }
 
 function saveList(domList) {
-  allItems = domList;
-  chrome.storage.local.set({ domList });
+  allItems = sortNewestFirst(domList);
+  chrome.storage.local.set({ domList: allItems });
 }
 
 function renderFiltered() {
@@ -257,7 +261,7 @@ changeShortcutBtn.addEventListener("click", () => {
 
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area === "local" && changes.domList) {
-    allItems = changes.domList.newValue || [];
+    allItems = sortNewestFirst(changes.domList.newValue || []);
     renderFiltered();
   }
 });
