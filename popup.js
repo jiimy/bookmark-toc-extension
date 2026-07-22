@@ -6,6 +6,7 @@ const searchEl = document.getElementById("search");
 const clearBtn = document.getElementById("clear");
 const shortcutDisplay = document.getElementById("shortcutDisplay");
 const changeShortcutBtn = document.getElementById("changeShortcut");
+const compactViewBtn = document.getElementById("compactView");
 const pickKeyLabel = document.getElementById("pickKeyLabel");
 const hintKey = document.getElementById("hintKey");
 
@@ -20,20 +21,25 @@ const DEFAULT_SHORTCUT = {
 
 let allItems = [];
 let capturing = false;
+let compactView = false;
 
-function sortNewestFirst(list) {
-  return list.slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+function sortList(list) {
+  return list.slice().sort((a, b) => {
+    const favDiff = Number(!!b.favorite) - Number(!!a.favorite);
+    if (favDiff !== 0) return favDiff;
+    return (b.createdAt || 0) - (a.createdAt || 0);
+  });
 }
 
 function loadList() {
   chrome.storage.local.get({ domList: [] }, (result) => {
-    allItems = sortNewestFirst(result.domList || []);
+    allItems = sortList(result.domList || []);
     renderFiltered();
   });
 }
 
 function saveList(domList) {
-  allItems = sortNewestFirst(domList);
+  allItems = sortList(domList);
   chrome.storage.local.set({ domList: allItems });
 }
 
@@ -90,6 +96,17 @@ function createCard(item) {
   const actions = document.createElement("div");
   actions.className = "card-actions";
 
+  const favBtn = document.createElement("button");
+  favBtn.type = "button";
+  favBtn.className = "action-btn fav-btn" + (item.favorite ? " active" : "");
+  favBtn.textContent = item.favorite ? "★" : "☆";
+  favBtn.title = item.favorite ? "즐겨찾기 해제" : "즐겨찾기";
+  favBtn.addEventListener("click", () => {
+    item.favorite = !item.favorite;
+    saveList(allItems);
+    renderFiltered();
+  });
+
   const goBtn = document.createElement("button");
   goBtn.className = "action-btn go-btn";
   goBtn.textContent = "이동";
@@ -104,6 +121,7 @@ function createCard(item) {
     renderFiltered();
   });
 
+  actions.appendChild(favBtn);
   actions.appendChild(goBtn);
   actions.appendChild(deleteBtn);
 
@@ -259,12 +277,34 @@ changeShortcutBtn.addEventListener("click", () => {
   }
 });
 
+function applyCompactView(enabled) {
+  compactView = !!enabled;
+  document.body.classList.toggle("compact-view", compactView);
+  compactViewBtn.classList.toggle("active", compactView);
+  compactViewBtn.setAttribute("aria-pressed", compactView ? "true" : "false");
+}
+
+function loadCompactView() {
+  chrome.storage.local.get({ compactView: false }, (result) => {
+    applyCompactView(result.compactView);
+  });
+}
+
+compactViewBtn.addEventListener("click", () => {
+  applyCompactView(!compactView);
+  chrome.storage.local.set({ compactView });
+});
+
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area === "local" && changes.domList) {
-    allItems = sortNewestFirst(changes.domList.newValue || []);
+    allItems = sortList(changes.domList.newValue || []);
     renderFiltered();
+  }
+  if (area === "local" && changes.compactView) {
+    applyCompactView(changes.compactView.newValue);
   }
 });
 
 loadShortcut();
+loadCompactView();
 loadList();

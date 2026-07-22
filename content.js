@@ -145,6 +145,7 @@ function saveTarget(el) {
     scrollTop: Math.round(window.scrollY),
     label: getLabel(el),
     description: "",
+    favorite: false,
     createdAt: Date.now(),
   };
 
@@ -155,7 +156,11 @@ function saveTarget(el) {
     }
     const domList = result.domList || [];
     domList.push(item);
-    domList.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    domList.sort((a, b) => {
+      const favDiff = Number(!!b.favorite) - Number(!!a.favorite);
+      if (favDiff !== 0) return favDiff;
+      return (b.createdAt || 0) - (a.createdAt || 0);
+    });
     storage.set({ domList }, () => {
       if (chrome.runtime.lastError) {
         showToast("저장 실패 · 페이지를 새로고침하세요");

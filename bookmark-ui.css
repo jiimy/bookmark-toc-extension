@@ -92,6 +92,12 @@ body {
   background: #f3f4f6;
 }
 
+.mini-btn.active {
+  border-color: #4f8cff;
+  background: #eff6ff;
+  color: #2563eb;
+}
+
 .toolbar {
   display: flex;
   align-items: center;
@@ -189,6 +195,7 @@ body {
 .card-actions {
   display: flex;
   justify-content: flex-end;
+  align-items: center;
   gap: 6px;
   margin-top: 8px;
 }
@@ -199,6 +206,24 @@ body {
   padding: 5px 10px;
   font-size: 12px;
   cursor: pointer;
+}
+
+.fav-btn {
+  margin-right: auto;
+  background: #f3f4f6;
+  color: #9ca3af;
+  min-width: 32px;
+  padding: 5px 8px;
+}
+
+.fav-btn:hover {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.fav-btn.active {
+  background: #fef3c7;
+  color: #d97706;
 }
 
 .go-btn {
@@ -224,4 +249,26 @@ body {
   text-align: center;
   font-size: 13px;
   color: #9ca3af;
+}
+
+body.compact-view .card {
+  padding: 8px 10px;
+}
+
+body.compact-view .card-url,
+body.compact-view .card-desc,
+body.compact-view .card-actions {
+  display: none;
+}
+
+body.compact-view .card-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: normal;
+}
+
+body.compact-view .list {
+  gap: 4px;
+  max-height: 440px;
 }
