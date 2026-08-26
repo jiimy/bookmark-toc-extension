@@ -1,5 +1,5 @@
 // background.js
-// 팝업에서 북마크 항목을 클릭하면, 해당 URL로 이동한 뒤 저장된 위치로 스크롤합니다.
+// 팝업에서 북마크 항목을 클릭하면, 새 탭으로 연 뒤 저장된 위치로 스크롤합니다.
 
 chrome.runtime.onMessage.addListener((message) => {
   if (message && message.action === "openBookmark" && message.item) {
@@ -7,31 +7,18 @@ chrome.runtime.onMessage.addListener((message) => {
   }
 });
 
-function stripHash(url) {
-  return (url || "").split("#")[0];
-}
-
 function openBookmark(item) {
-  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-    const tab = tabs[0];
-    if (!tab) return;
+  chrome.tabs.create({ url: item.url, active: true }, (tab) => {
+    if (!tab?.id) return;
 
-    const sameUrl = tab.url && stripHash(tab.url) === stripHash(item.url);
-
-    if (sameUrl) {
-      runScroll(tab.id, item);
-      return;
-    }
-
-    chrome.tabs.update(tab.id, { url: item.url }, () => {
-      const listener = (updatedTabId, info) => {
-        if (updatedTabId === tab.id && info.status === "complete") {
-          chrome.tabs.onUpdated.removeListener(listener);
-          runScroll(tab.id, item);
-        }
-      };
-      chrome.tabs.onUpdated.addListener(listener);
-    });
+    const tabId = tab.id;
+    const listener = (updatedTabId, info) => {
+      if (updatedTabId === tabId && info.status === "complete") {
+        chrome.tabs.onUpdated.removeListener(listener);
+        runScroll(tabId, item);
+      }
+    };
+    chrome.tabs.onUpdated.addListener(listener);
   });
 }
 
